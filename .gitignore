@@ -1,5 +1,14 @@
 # Dependencies
 node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files
+.env
+.env.local
+.env.*.local
 
 # Build outputs
 dist/
@@ -7,10 +16,9 @@ dist/
 build/
 *.log
 
-# Environment
-.env
-.env.local
-.env.*.local
+# Test outputs
+coverage/
+.nyc_output/
 
 # IDE
 .idea/
@@ -22,13 +30,63 @@ build/
 .DS_Store
 Thumbs.db
 
-# Test
-coverage/
-.nyc_output/
-
 # Database
 *.sqlite
 *.db
 
-# Legacy
-_legacy/
+# Legacy project (Beauty App - not Oikos)
+alembic/
+alembic.ini
+app/
+config/
+ml/
+scratch/
+services/internationalization/
+tests/
+test/
+test-output.txt
+build-output.txt
+sprint4-final.txt
+config/config.js
+index.js
+schema.sql
+seed.sql
+railway_seed.sql
+db_create_disputas.js
+db_create_indexes.js
+debug-routes.js
+force_seed.js
+run_seed.js
+scripts/seed_data.py
+setup-tiktok-trends.ps1
+scrape-with-scroll.jscd
+package-lock.json
+public/
+uploads/
+
+# Flutter web build artifacts
+public/canvaskit/
+public/assets/
+public/flutter.js
+public/flutter_bootstrap.js
+public/flutter_service_worker.js
+public/main.dart.js
+public/version.json
+public/manifest.json
+public/index.html
+public/favicon.png
+public/icons/
+
+# TikTok diagnostics
+tiktok-diagnostic-*.html
+tiktok-diagnostic-*.png
+tiktok-final.png
+
+# Docker
+Dockerfile
+Dockerfile.prod
+docker-compose.yml
+
+# Other
+IDEA.md
+pyproject.toml

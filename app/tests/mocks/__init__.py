@@ -1,1 +1,0 @@
-"""Mocks para tests."""
