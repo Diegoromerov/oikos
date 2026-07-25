@@ -1,0 +1,621 @@
+// scrape-with-scroll.js - Scraper con scroll e interacción
+require('dotenv').config();
+const { chromium } = require('playwright');
+
+(async () => {
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('🔍 SCRAPEO CON SCROLL E INTERACCIÓN');
+  console.log('═══════════════════════════════════════════════════════════\n');
+
+  let browser = null;
+  let context = null;
+
+  try {
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    context = await browser.newContext({
+      locale: 'es-CO',
+      timezoneId: 'America/Bogota',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+    });
+
+    const page = await context.newPage();
+
+    // Capturar TODAS las respuestas XHR
+    const allXhrResponses = [];
+    page.on('response', async (response) => {
+      const url = response.url();
+      const contentType = response.headers()['content-type'] || '';
+      
+      if (contentType.includes('json')) {
+        try {
+          const json = await response.json();
+          allXhrResponses.push({
+            url: url,
+            data: json,
+          });
+        } catch (e) {
+          // Ignorar
+        }
+      }
+    });
+
+    const url = 'https://ads.tiktok.com/creative/creativeCenter/trends?region=CO&period=7';
+    console.log(`📡 Navegando a: ${url}\n`);
+
+    await page.goto(url, { 
+      waitUntil: 'domcontentloaded',
+      timeout: 60000 
+    });
+
+    console.log('⏳ Esperando 10 segundos iniciales...\n');
+    await page.waitForTimeout(10000);
+
+    // Hacer scroll para activar carga de contenido
+    console.log('📜 Haciendo scroll para activar carga de contenido...\n');
+    await page.evaluate(() => {
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+    await page.waitForTimeout(5000);
+
+    // Scroll hacia arriba
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await page.waitForTimeout(5000);
+
+    // Scroll intermedio
+    await page.evaluate(() => {
+      window.scrollTo(0, 500);
+    });
+    await page.waitForTimeout(10000);
+
+    console.log('⏳ Esperando 30 segundos totales para que cargue todo...\n');
+    await page.waitForTimeout(10000);
+
+    // Buscar hashtags con múltiples selectores
+    console.log('🔍 Buscando hashtags en el DOM...\n');
+    const hashtags = await page.evaluate(() => {
+      const results = [];
+      
+      // Intentar múltiples selectores posibles
+      const selectors = [
+        'a[href*="/hashtag/"]',
+        '[class*="hashtag"]',
+        '[class*="trend-item"]',
+        '[class*="card"]',
+        'table tbody tr',
+        '[data-e2e*="hashtag"]',
+        '[class*="item"]',
+      ];
+
+      for (const selector of selectors) {
+        const elements = document.querySelectorAll(selector);
+        console.log(`Selector "${selector}": ${elements.length} elementos`);
+        
+        elements.forEach(el => {
+          const text = el.innerText?.trim() || '';
+          const href = el.getAttribute('href') || '';
+          
+          // Filtrar solo elementos que parezcan hashtags
+          if (text.length > 2 && text.length < 100 && !text.includes('Top Ads')) {
+            results.push({
+              selector: selector,
+              text: text.substring(0, 200),
+              href: href,
+              html: el.outerHTML?.substring(0, 300) || '',
+            });
+          }
+        });
+      }
+
+      return results;
+    });
+
+    console.log(`\n📊 Total de elementos encontrados: ${hashtags.length}\n`);
+
+    if (hashtags.length > 0) {
+      console.log('Primeros 10 elementos:');
+      hashtags.slice(0, 10).forEach((el, idx) => {
+        console.log(`\n${idx + 1}. Selector: ${el.selector}`);
+        console.log(`   Text: ${el.text}`);
+        console.log(`   Href: ${el.href}`);
+        console.log(`   HTML: ${el.html.substring(0, 150)}...`);
+      });
+    } else {
+      console.log('❌ No se encontraron hashtags en el DOM\n');
+      
+      // Mostrar todas las XHR capturadas
+      console.log('📡 XHR capturadas durante el proceso:');
+      allXhrResponses.forEach((xhr, idx) => {
+        if (xhr.url.includes('hashtag') || xhr.url.includes('trend') || xhr.url.includes('creative')) {
+          console.log(`\n${idx + 1}. URL: ${xhr.url.substring(0, 100)}...`);
+          if (xhr.data?.data?.list) {
+            console.log(`   → Tiene ${xhr.data.data.list.length} items en data.list`);
+            console.log(`   → Primer item: ${JSON.stringify(xhr.data.data.list[0]).substring(0, 200)}...`);
+          }
+        }
+      });
+    }
+
+    // Tomar captura final
+    await page.screenshot({ path: 'tiktok-final.png', fullPage: true });
+    console.log('\n📸 Captura guardada: tiktok-final.png');
+
+  } catch (error) {
+    console.error('❌ ERROR:', error.message);
+    console.error(error.stack);
+  } finally {
+    if (context) await context.close();
+    if (browser) await browser.close();
+  }
+})();// scrape-with-scroll.js - Scraper con scroll e interacción
+require('dotenv').config();
+const { chromium } = require('playwright');
+
+(async () => {
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('🔍 SCRAPEO CON SCROLL E INTERACCIÓN');
+  console.log('═══════════════════════════════════════════════════════════\n');
+
+  let browser = null;
+  let context = null;
+
+  try {
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    context = await browser.newContext({
+      locale: 'es-CO',
+      timezoneId: 'America/Bogota',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+    });
+
+    const page = await context.newPage();
+
+    // Capturar TODAS las respuestas XHR
+    const allXhrResponses = [];
+    page.on('response', async (response) => {
+      const url = response.url();
+      const contentType = response.headers()['content-type'] || '';
+      
+      if (contentType.includes('json')) {
+        try {
+          const json = await response.json();
+          allXhrResponses.push({
+            url: url,
+            data: json,
+          });
+        } catch (e) {
+          // Ignorar
+        }
+      }
+    });
+
+    const url = 'https://ads.tiktok.com/creative/creativeCenter/trends?region=CO&period=7';
+    console.log(`📡 Navegando a: ${url}\n`);
+
+    await page.goto(url, { 
+      waitUntil: 'domcontentloaded',
+      timeout: 60000 
+    });
+
+    console.log('⏳ Esperando 10 segundos iniciales...\n');
+    await page.waitForTimeout(10000);
+
+    // Hacer scroll para activar carga de contenido
+    console.log('📜 Haciendo scroll para activar carga de contenido...\n');
+    await page.evaluate(() => {
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+    await page.waitForTimeout(5000);
+
+    // Scroll hacia arriba
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await page.waitForTimeout(5000);
+
+    // Scroll intermedio
+    await page.evaluate(() => {
+      window.scrollTo(0, 500);
+    });
+    await page.waitForTimeout(10000);
+
+    console.log('⏳ Esperando 30 segundos totales para que cargue todo...\n');
+    await page.waitForTimeout(10000);
+
+    // Buscar hashtags con múltiples selectores
+    console.log('🔍 Buscando hashtags en el DOM...\n');
+    const hashtags = await page.evaluate(() => {
+      const results = [];
+      
+      // Intentar múltiples selectores posibles
+      const selectors = [
+        'a[href*="/hashtag/"]',
+        '[class*="hashtag"]',
+        '[class*="trend-item"]',
+        '[class*="card"]',
+        'table tbody tr',
+        '[data-e2e*="hashtag"]',
+        '[class*="item"]',
+      ];
+
+      for (const selector of selectors) {
+        const elements = document.querySelectorAll(selector);
+        console.log(`Selector "${selector}": ${elements.length} elementos`);
+        
+        elements.forEach(el => {
+          const text = el.innerText?.trim() || '';
+          const href = el.getAttribute('href') || '';
+          
+          // Filtrar solo elementos que parezcan hashtags
+          if (text.length > 2 && text.length < 100 && !text.includes('Top Ads')) {
+            results.push({
+              selector: selector,
+              text: text.substring(0, 200),
+              href: href,
+              html: el.outerHTML?.substring(0, 300) || '',
+            });
+          }
+        });
+      }
+
+      return results;
+    });
+
+    console.log(`\n📊 Total de elementos encontrados: ${hashtags.length}\n`);
+
+    if (hashtags.length > 0) {
+      console.log('Primeros 10 elementos:');
+      hashtags.slice(0, 10).forEach((el, idx) => {
+        console.log(`\n${idx + 1}. Selector: ${el.selector}`);
+        console.log(`   Text: ${el.text}`);
+        console.log(`   Href: ${el.href}`);
+        console.log(`   HTML: ${el.html.substring(0, 150)}...`);
+      });
+    } else {
+      console.log('❌ No se encontraron hashtags en el DOM\n');
+      
+      // Mostrar todas las XHR capturadas
+      console.log('📡 XHR capturadas durante el proceso:');
+      allXhrResponses.forEach((xhr, idx) => {
+        if (xhr.url.includes('hashtag') || xhr.url.includes('trend') || xhr.url.includes('creative')) {
+          console.log(`\n${idx + 1}. URL: ${xhr.url.substring(0, 100)}...`);
+          if (xhr.data?.data?.list) {
+            console.log(`   → Tiene ${xhr.data.data.list.length} items en data.list`);
+            console.log(`   → Primer item: ${JSON.stringify(xhr.data.data.list[0]).substring(0, 200)}...`);
+          }
+        }
+      });
+    }
+
+    // Tomar captura final
+    await page.screenshot({ path: 'tiktok-final.png', fullPage: true });
+    console.log('\n📸 Captura guardada: tiktok-final.png');
+
+  } catch (error) {
+    console.error('❌ ERROR:', error.message);
+    console.error(error.stack);
+  } finally {
+    if (context) await context.close();
+    if (browser) await browser.close();
+  }
+})();// scrape-with-scroll.js - Scraper con scroll e interacción
+require('dotenv').config();
+const { chromium } = require('playwright');
+
+(async () => {
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('🔍 SCRAPEO CON SCROLL E INTERACCIÓN');
+  console.log('═══════════════════════════════════════════════════════════\n');
+
+  let browser = null;
+  let context = null;
+
+  try {
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    context = await browser.newContext({
+      locale: 'es-CO',
+      timezoneId: 'America/Bogota',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+    });
+
+    const page = await context.newPage();
+
+    // Capturar TODAS las respuestas XHR
+    const allXhrResponses = [];
+    page.on('response', async (response) => {
+      const url = response.url();
+      const contentType = response.headers()['content-type'] || '';
+      
+      if (contentType.includes('json')) {
+        try {
+          const json = await response.json();
+          allXhrResponses.push({
+            url: url,
+            data: json,
+          });
+        } catch (e) {
+          // Ignorar
+        }
+      }
+    });
+
+    const url = 'https://ads.tiktok.com/creative/creativeCenter/trends?region=CO&period=7';
+    console.log(`📡 Navegando a: ${url}\n`);
+
+    await page.goto(url, { 
+      waitUntil: 'domcontentloaded',
+      timeout: 60000 
+    });
+
+    console.log('⏳ Esperando 10 segundos iniciales...\n');
+    await page.waitForTimeout(10000);
+
+    // Hacer scroll para activar carga de contenido
+    console.log('📜 Haciendo scroll para activar carga de contenido...\n');
+    await page.evaluate(() => {
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+    await page.waitForTimeout(5000);
+
+    // Scroll hacia arriba
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await page.waitForTimeout(5000);
+
+    // Scroll intermedio
+    await page.evaluate(() => {
+      window.scrollTo(0, 500);
+    });
+    await page.waitForTimeout(10000);
+
+    console.log('⏳ Esperando 30 segundos totales para que cargue todo...\n');
+    await page.waitForTimeout(10000);
+
+    // Buscar hashtags con múltiples selectores
+    console.log('🔍 Buscando hashtags en el DOM...\n');
+    const hashtags = await page.evaluate(() => {
+      const results = [];
+      
+      // Intentar múltiples selectores posibles
+      const selectors = [
+        'a[href*="/hashtag/"]',
+        '[class*="hashtag"]',
+        '[class*="trend-item"]',
+        '[class*="card"]',
+        'table tbody tr',
+        '[data-e2e*="hashtag"]',
+        '[class*="item"]',
+      ];
+
+      for (const selector of selectors) {
+        const elements = document.querySelectorAll(selector);
+        console.log(`Selector "${selector}": ${elements.length} elementos`);
+        
+        elements.forEach(el => {
+          const text = el.innerText?.trim() || '';
+          const href = el.getAttribute('href') || '';
+          
+          // Filtrar solo elementos que parezcan hashtags
+          if (text.length > 2 && text.length < 100 && !text.includes('Top Ads')) {
+            results.push({
+              selector: selector,
+              text: text.substring(0, 200),
+              href: href,
+              html: el.outerHTML?.substring(0, 300) || '',
+            });
+          }
+        });
+      }
+
+      return results;
+    });
+
+    console.log(`\n📊 Total de elementos encontrados: ${hashtags.length}\n`);
+
+    if (hashtags.length > 0) {
+      console.log('Primeros 10 elementos:');
+      hashtags.slice(0, 10).forEach((el, idx) => {
+        console.log(`\n${idx + 1}. Selector: ${el.selector}`);
+        console.log(`   Text: ${el.text}`);
+        console.log(`   Href: ${el.href}`);
+        console.log(`   HTML: ${el.html.substring(0, 150)}...`);
+      });
+    } else {
+      console.log('❌ No se encontraron hashtags en el DOM\n');
+      
+      // Mostrar todas las XHR capturadas
+      console.log('📡 XHR capturadas durante el proceso:');
+      allXhrResponses.forEach((xhr, idx) => {
+        if (xhr.url.includes('hashtag') || xhr.url.includes('trend') || xhr.url.includes('creative')) {
+          console.log(`\n${idx + 1}. URL: ${xhr.url.substring(0, 100)}...`);
+          if (xhr.data?.data?.list) {
+            console.log(`   → Tiene ${xhr.data.data.list.length} items en data.list`);
+            console.log(`   → Primer item: ${JSON.stringify(xhr.data.data.list[0]).substring(0, 200)}...`);
+          }
+        }
+      });
+    }
+
+    // Tomar captura final
+    await page.screenshot({ path: 'tiktok-final.png', fullPage: true });
+    console.log('\n📸 Captura guardada: tiktok-final.png');
+
+  } catch (error) {
+    console.error('❌ ERROR:', error.message);
+    console.error(error.stack);
+  } finally {
+    if (context) await context.close();
+    if (browser) await browser.close();
+  }
+})();// scrape-with-scroll.js - Scraper con scroll e interacción
+require('dotenv').config();
+const { chromium } = require('playwright');
+
+(async () => {
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('🔍 SCRAPEO CON SCROLL E INTERACCIÓN');
+  console.log('═══════════════════════════════════════════════════════════\n');
+
+  let browser = null;
+  let context = null;
+
+  try {
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    context = await browser.newContext({
+      locale: 'es-CO',
+      timezoneId: 'America/Bogota',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+    });
+
+    const page = await context.newPage();
+
+    // Capturar TODAS las respuestas XHR
+    const allXhrResponses = [];
+    page.on('response', async (response) => {
+      const url = response.url();
+      const contentType = response.headers()['content-type'] || '';
+      
+      if (contentType.includes('json')) {
+        try {
+          const json = await response.json();
+          allXhrResponses.push({
+            url: url,
+            data: json,
+          });
+        } catch (e) {
+          // Ignorar
+        }
+      }
+    });
+
+    const url = 'https://ads.tiktok.com/creative/creativeCenter/trends?region=CO&period=7';
+    console.log(`📡 Navegando a: ${url}\n`);
+
+    await page.goto(url, { 
+      waitUntil: 'domcontentloaded',
+      timeout: 60000 
+    });
+
+    console.log('⏳ Esperando 10 segundos iniciales...\n');
+    await page.waitForTimeout(10000);
+
+    // Hacer scroll para activar carga de contenido
+    console.log('📜 Haciendo scroll para activar carga de contenido...\n');
+    await page.evaluate(() => {
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+    await page.waitForTimeout(5000);
+
+    // Scroll hacia arriba
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await page.waitForTimeout(5000);
+
+    // Scroll intermedio
+    await page.evaluate(() => {
+      window.scrollTo(0, 500);
+    });
+    await page.waitForTimeout(10000);
+
+    console.log('⏳ Esperando 30 segundos totales para que cargue todo...\n');
+    await page.waitForTimeout(10000);
+
+    // Buscar hashtags con múltiples selectores
+    console.log('🔍 Buscando hashtags en el DOM...\n');
+    const hashtags = await page.evaluate(() => {
+      const results = [];
+      
+      // Intentar múltiples selectores posibles
+      const selectors = [
+        'a[href*="/hashtag/"]',
+        '[class*="hashtag"]',
+        '[class*="trend-item"]',
+        '[class*="card"]',
+        'table tbody tr',
+        '[data-e2e*="hashtag"]',
+        '[class*="item"]',
+      ];
+
+      for (const selector of selectors) {
+        const elements = document.querySelectorAll(selector);
+        console.log(`Selector "${selector}": ${elements.length} elementos`);
+        
+        elements.forEach(el => {
+          const text = el.innerText?.trim() || '';
+          const href = el.getAttribute('href') || '';
+          
+          // Filtrar solo elementos que parezcan hashtags
+          if (text.length > 2 && text.length < 100 && !text.includes('Top Ads')) {
+            results.push({
+              selector: selector,
+              text: text.substring(0, 200),
+              href: href,
+              html: el.outerHTML?.substring(0, 300) || '',
+            });
+          }
+        });
+      }
+
+      return results;
+    });
+
+    console.log(`\n📊 Total de elementos encontrados: ${hashtags.length}\n`);
+
+    if (hashtags.length > 0) {
+      console.log('Primeros 10 elementos:');
+      hashtags.slice(0, 10).forEach((el, idx) => {
+        console.log(`\n${idx + 1}. Selector: ${el.selector}`);
+        console.log(`   Text: ${el.text}`);
+        console.log(`   Href: ${el.href}`);
+        console.log(`   HTML: ${el.html.substring(0, 150)}...`);
+      });
+    } else {
+      console.log('❌ No se encontraron hashtags en el DOM\n');
+      
+      // Mostrar todas las XHR capturadas
+      console.log('📡 XHR capturadas durante el proceso:');
+      allXhrResponses.forEach((xhr, idx) => {
+        if (xhr.url.includes('hashtag') || xhr.url.includes('trend') || xhr.url.includes('creative')) {
+          console.log(`\n${idx + 1}. URL: ${xhr.url.substring(0, 100)}...`);
+          if (xhr.data?.data?.list) {
+            console.log(`   → Tiene ${xhr.data.data.list.length} items en data.list`);
+            console.log(`   → Primer item: ${JSON.stringify(xhr.data.data.list[0]).substring(0, 200)}...`);
+          }
+        }
+      });
+    }
+
+    // Tomar captura final
+    await page.screenshot({ path: 'tiktok-final.png', fullPage: true });
+    console.log('\n📸 Captura guardada: tiktok-final.png');
+
+  } catch (error) {
+    console.error('❌ ERROR:', error.message);
+    console.error(error.stack);
+  } finally {
+    if (context) await context.close();
+    if (browser) await browser.close();
+  }
+})();
