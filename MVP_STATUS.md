@@ -1,8 +1,8 @@
 # MVP Status — Oikos App Backend
 
-**Última verificación:** 2025-07-23  
+**Última verificación:** 2025-07-24  
 **Comando de verificación:** `npm run build && npm run test:integration`  
-**Resultado:** ✅ Build limpio (0 errores) · 73 tests de integración PASS contra PostgreSQL real
+**Resultado:** ✅ Build limpio (0 errores) · **81 tests de integración PASS** contra PostgreSQL real
 
 ---
 
@@ -14,7 +14,9 @@
 | **Sprint 2** | Portería | 5 | 26 | `npm run test:integration -- --testPathPattern="porteria"` |
 | **Sprint 3** | PQRS + Reservas | 4 | 20 | `npm run test:integration -- --testPathPattern="pqrs-reservas"` |
 | **Sprint 4** | Comunicados | 1 | 8 | `npm run test:integration -- --testPathPattern="comunicados"` |
-| **Total** | **7 módulos funcionales** | **17 tablas RLS** | **73** | `npm run test:integration` |
+| **Sprint 5** | Auth (Login) | - | 4 | `npm run test:integration -- --testPathPattern="auth"` |
+| **Sprint 5** | Dashboard (Stats) | - | 4 | `npm run test:integration -- --testPathPattern="dashboard"` |
+| **Total** | **7 módulos funcionales** | **17 tablas RLS** | **81** | `npm run test:integration` |
 
 ---
 
@@ -42,6 +44,12 @@
 **Tabla:** `comunicados`  
 **Features:** Cartelera digital unidireccional (admin→residentes), prioridad visual (baja/normal/alta/urgente), fecha_expiracion opcional, solo vigentes para residentes  
 **Tests:** RLS aislamiento + cross-tenant attacks + filtro vigentes + prioridad
+
+### Sprint 5 — Auth Login + Dashboard (8 tests)
+**Módulos:** `core/auth/` (login), `dashboard/` (stats)  
+**Endpoints:** `POST /auth/login` (JWT), `GET /dashboard/stats` (agrega cartera, PQRS, reservas, comunicados)  
+**Features:** Login con bcrypt + JWT, dashboard agregado sin lógica de negocio nueva  
+**Tests:** 4 auth (login válido, password inválido, usuario inexistente, roles) + 4 dashboard (aislamiento RLS tenant A/B, cross-tenant, superadmin)
 
 ---
 
@@ -73,15 +81,17 @@
 npm run build
 # → Exit 0, 0 errores TypeScript
 
-# Tests completos (73 PASS)
+# Tests completos (81 PASS)
 npm run test:integration
-# → Test Suites: 4 passed, Tests: 73 passed
+# → Test Suites: 6 passed, Tests: 81 passed
 
 # Por sprint individual
 npm run test:integration -- --testPathPattern="rls-isolation"      # Sprint 1: 19
 npm run test:integration -- --testPathPattern="porteria"           # Sprint 2: 26
 npm run test:integration -- --testPathPattern="pqrs-reservas"      # Sprint 3: 20
 npm run test:integration -- --testPathPattern="comunicados"        # Sprint 4: 8
+npm run test:integration -- --testPathPattern="auth"               # Sprint 5: 4 (auth)
+npm run test:integration -- --testPathPattern="dashboard"          # Sprint 5: 4 (dashboard)
 ```
 
 ---
@@ -123,7 +133,7 @@ src/modules/
 **✅ COMPLETO — Listo para despliegue piloto (220 aptos)**
 
 - 7 módulos funcionales cubriendo: multi-tenancy, usuarios/unidades, facturación, portería (offline-first), PQRS con SLA, reservas con no-overlap DB-level, comunicados
-- 73 tests de integración reales contra PostgreSQL con usuario non-owner
+- **81 tests de integración** reales contra PostgreSQL con usuario non-owner
 - Build limpio, RLS forzado en 17 tablas
 - Código legacy aislado, sin riesgo de compilación accidental
 
@@ -132,3 +142,17 @@ src/modules/
 2. Mantenimiento activos (calendario, alertas, proveedores)
 3. SiigoAdapter real (definir producto Nube/Contabilidad, mapeo, webhooks)
 4. Frontend Flutter (portería offline-first, residente, admin)
+
+---
+
+## Git
+
+```bash
+cd "/c/oikos app"
+git status
+# On branch master
+# nothing to commit, working tree clean
+
+git log --oneline
+# ff86b54 chore: initial commit - Sprint 1-5 backend complete (81 tests passing)
+```

@@ -24,14 +24,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Iniciar sesión y obtener JWT' })
   @ApiResponse({ status: 200, description: 'Login exitoso', schema: {
-    example: { access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
+    example: { access_token: 'eyJhbG...VCJ9...' }
   }})
   @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
   }
 
-  @Get('profile')
+  @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
