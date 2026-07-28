@@ -60,7 +60,6 @@ run_seed.js
 scripts/seed_data.py
 setup-tiktok-trends.ps1
 scrape-with-scroll.jscd
-package-lock.json
 public/
 uploads/
 
