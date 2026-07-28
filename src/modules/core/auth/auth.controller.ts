@@ -39,4 +39,12 @@ export class AuthController {
   async getProfile(@Request() req: any) {
     return req.user;
   }
+
+  @Get('health')
+  @Public()
+  @ApiOperation({ summary: 'Health check endpoint' })
+  @ApiResponse({ status: 200, description: 'Service healthy' })
+  async health() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+  }
 }
