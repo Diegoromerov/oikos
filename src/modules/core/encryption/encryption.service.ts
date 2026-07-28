@@ -10,10 +10,13 @@ export class EncryptionService {
   private readonly config: EncryptionConfig;
 
   constructor() {
-    const secretKey = process.env.ENCRYPTION_KEY || 'default-secret-key-change-in-production-32chars!!';
+    if (!process.env.ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY environment variable is required but not defined');
+    }
+
     this.config = {
       algorithm: 'aes-256-gcm',
-      key: crypto.scryptSync(secretKey, 'salt', 32),
+      key: crypto.scryptSync(process.env.ENCRYPTION_KEY, 'salt', 32),
       ivLength: 16,
     };
   }

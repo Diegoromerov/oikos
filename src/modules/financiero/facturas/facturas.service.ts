@@ -3,13 +3,13 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In } from 'typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Factura, FacturaTipo, FacturaEstadoSync } from './factura.entity';
-import { Pago, PagoEstadoSync } from '../pagos/pago.entity';
 import { Unidad } from '../../unidades/unidad.entity';
 import { Tenant } from '../../tenants/tenant.entity';
 import { ContabilidadPort, EstadoCuenta, FacturaPendiente } from '../contabilidad-adapter/contabilidad.port';
@@ -22,14 +22,13 @@ export class FacturasService {
   constructor(
     @InjectRepository(Factura)
     private readonly facturasRepository: Repository<Factura>,
-    @InjectRepository(Pago)
-    private readonly pagosRepository: Repository<Pago>,
     @InjectRepository(Unidad)
     private readonly unidadesRepository: Repository<Unidad>,
     @InjectRepository(Tenant)
     private readonly tenantsRepository: Repository<Tenant>,
     @InjectQueue('contabilidad-sync')
     private readonly syncQueue: Queue,
+    @Inject('CONTABILIDAD_PORT')
     private readonly contabilidadPort: ContabilidadPort,
   ) {}
 

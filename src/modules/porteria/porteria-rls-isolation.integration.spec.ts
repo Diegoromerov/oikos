@@ -415,8 +415,8 @@ describe('Porteria RLS Isolation Tests', () => {
       await queryRunnerSuperadmin.query(`
         INSERT INTO incidentes (id, tenant_id, local_uuid, portero_id, tipo_incidente, descripcion, prioridad_envio, creado_en)
         VALUES 
-          (gen_random_uuid(), '${TENANT_A_ID}', 'inc-a-1', '${PORTERO_A_ID}', 'incidente', 'Ruido excesivo', false, NOW()),
-          (gen_random_uuid(), '${TENANT_B_ID}', 'inc-b-1', '${PORTERO_B_ID}', 'panico', 'Emergencia médica', true, NOW())
+          (gen_random_uuid(), '${TENANT_A_ID}', 'inc-a-1-' || gen_random_uuid(), '${PORTERO_A_ID}', 'incidente', 'Ruido excesivo', false, NOW()),
+          (gen_random_uuid(), '${TENANT_B_ID}', 'inc-b-1-' || gen_random_uuid(), '${PORTERO_B_ID}', 'panico', 'Emergencia médica', true, NOW())
         ON CONFLICT DO NOTHING;
       `);
 

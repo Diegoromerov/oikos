@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // Core modules
 import { AuthModule } from './modules/core/auth/auth.module';
@@ -45,19 +46,21 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
       }),
     }),
 
-    // Redis/BullMQ
-    BullModule.forRootAsync({
-      useFactory: () => ({
-        connection: {
-          host: process.env.REDIS_HOST || 'localhost',
-          port: parseInt(process.env.REDIS_PORT || '6379', 10),
-          password: process.env.REDIS_PASSWORD || undefined,
-        },
-      }),
+    // Redis/BullMQ - connection and global queue registration
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        password: process.env.REDIS_PASSWORD || undefined,
+      },
     }),
+    BullModule.registerQueue({ name: 'contabilidad-sync' }),
 
     // Schedule
     ScheduleModule.forRoot(),
+
+    // Event Emitter (GLOBAL)
+    EventEmitterModule.forRoot({ global: true }),
 
     // Core modules
     AuthModule,

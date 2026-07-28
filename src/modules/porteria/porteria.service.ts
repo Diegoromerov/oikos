@@ -6,7 +6,6 @@ import { Correspondencia } from './correspondencia.entity';
 import { MinutaTurno } from './minuta-turno.entity';
 import { Incidente } from './incidente.entity';
 import { VisitantesPreautorizados } from './visitantes-preautorizados.entity';
-import { VisitantePreautorizado } from './visitante-preautorizado.entity';
 import { JwtService } from '@nestjs/jwt';
 
 interface SyncBatchItem {
@@ -30,8 +29,6 @@ export class PorteriaService {
     private readonly incidenteRepo: Repository<Incidente>,
     @InjectRepository(VisitantesPreautorizados)
     private readonly visitantesPreautorizadosRepo: Repository<VisitantesPreautorizados>,
-    @InjectRepository(VisitantePreautorizado)
-    private readonly visitantePreautorizadoRepo: Repository<VisitantePreautorizado>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -60,7 +57,7 @@ export class PorteriaService {
 
   private async upsertIdempotente(tabla: string, localUuid: string, data: Record<string, any>): Promise<'insertado' | 'duplicado'> {
     const repo = this.getRepo(tabla);
-    
+
     // Verificar si ya existe por localUuid
     const existente = await repo.findOne({ where: { localUuid } });
     if (existente) {
@@ -269,7 +266,9 @@ export class PorteriaService {
   private getQrSigningSecret(tenantId: string): string {
     // En producción, esta clave debería venir de la configuración del tenant (siigo_config o tabla dedicada)
     // Por ahora usamos una clave derivada del tenantId + secreto global
-    const globalSecret = process.env.QR_SIGNING_SECRET || 'oikos-qr-global-secret-2026';
-    return `${globalSecret}-${tenantId}`;
+    if (!process.env.QR_SIGNING_SECRET) {
+      throw new Error('QR_SIGNING_SECRET environment variable is required but not defined');
+    }
+    return `${process.env.QR_SIGNING_SECRET}-${tenantId}`;
   }
 }

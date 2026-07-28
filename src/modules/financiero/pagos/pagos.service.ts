@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,6 +13,7 @@ import { Pago, PagoEstadoSync, PagoMetodo } from './pago.entity';
 import { Factura, FacturaEstadoSync } from '../facturas/factura.entity';
 import { ContabilidadPort } from '../contabilidad-adapter/contabilidad.port';
 import { CreatePagoDto } from './dto/pago.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class PagosService {
@@ -20,19 +22,20 @@ export class PagosService {
   constructor(
     @InjectRepository(Pago)
     private readonly pagosRepository: Repository<Pago>,
-    @InjectRepository(Factura)
-    private readonly facturasRepository: Repository<Factura>,
     @InjectQueue('contabilidad-sync')
     private readonly syncQueue: Queue,
+    @Inject('CONTABILIDAD_PORT')
     private readonly contabilidadPort: ContabilidadPort,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async createWompiPayment(
     tenantId: string,
     dto: CreatePagoDto,
   ): Promise<Pago> {
-    // Validate factura exists and belongs to tenant
-    const factura = await this.facturasRepository.findOne({
+    // Validate factura exists and belongs to tenant via event emitter query
+    // We need to check factura exists - use direct query since we don't inject FacturaRepository
+    const factura = await this.pagosRepository.manager.findOne(Factura, {
       where: { id: dto.factura_id, tenant_id: tenantId },
       relations: ['unidad'],
     });
@@ -73,6 +76,14 @@ export class PagosService {
       tenantId,
     });
 
+    // Emit event for factura status update
+    this.eventEmitter.emit('pago.registrado', {
+      facturaId: dto.factura_id,
+      monto: dto.monto,
+      tenantId,
+      pagoId: saved.id,
+    });
+
     this.logger.log(`Created Wompi payment ${saved.id} for factura ${dto.factura_id}`);
     return saved;
   }
@@ -81,7 +92,7 @@ export class PagosService {
     tenantId: string,
     dto: CreatePagoDto,
   ): Promise<Pago> {
-    const factura = await this.facturasRepository.findOne({
+    const factura = await this.pagosRepository.manager.findOne(Factura, {
       where: { id: dto.factura_id, tenant_id: tenantId },
     });
 
@@ -108,6 +119,14 @@ export class PagosService {
     await this.syncQueue.add('sync-pago', {
       pagoId: saved.id,
       tenantId,
+    });
+
+    // Emit event for factura status update
+    this.eventEmitter.emit('pago.registrado', {
+      facturaId: dto.factura_id,
+      monto: dto.monto,
+      tenantId,
+      pagoId: saved.id,
     });
 
     return saved;
@@ -171,6 +190,14 @@ export class PagosService {
     return this.findByTenant(tenantId, { unidad_id: unidadId });
   }
 
+  async getPaymentsByFactura(facturaId: string, tenantId: string): Promise<Pago[]> {
+    return this.pagosRepository.find({
+      where: { factura_id: facturaId, tenant_id: tenantId },
+      relations: ['factura', 'unidad'],
+      order: { fecha: 'DESC' },
+    });
+  }
+
   async retrySync(id: string, tenantId: string): Promise<Pago> {
     const pago = await this.findById(id, tenantId);
 
@@ -207,31 +234,15 @@ export class PagosService {
     if (error) pago.error_sync = error;
 
     if (estado === PagoEstadoSync.SINCRONIZADO) {
-      // Also check if factura is fully paid and update its status
-      await this.checkAndUpdateFacturaStatus(pago.factura_id, tenantId);
+      // Emit event to update factura status
+      this.eventEmitter.emit('pago.sincronizado', {
+        facturaId: pago.factura_id,
+        monto: Number(pago.monto),
+        tenantId,
+        pagoId: pago.id,
+      });
     }
 
     return this.pagosRepository.save(pago);
-  }
-
-  private async checkAndUpdateFacturaStatus(
-    facturaId: string,
-    tenantId: string,
-  ): Promise<void> {
-    const factura = await this.facturasRepository.findOne({
-      where: { id: facturaId, tenant_id: tenantId },
-      relations: ['pagos'],
-    });
-
-    if (!factura) return;
-
-    const totalPagado = factura.pagos
-      .filter(p => p.estado_sync === PagoEstadoSync.SINCRONIZADO)
-      .reduce((sum, p) => sum + Number(p.monto), 0);
-
-    if (totalPagado >= Number(factura.monto) - 0.01) {
-      factura.estado_sync = FacturaEstadoSync.SINCRONIZADO;
-      await this.facturasRepository.save(factura);
-    }
   }
 }
