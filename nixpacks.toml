@@ -3,9 +3,11 @@ nixPkgs = ["nodejs_20", "postgresql"]
 
 [phases.install]
 cmds = ["npm ci --omit=dev"]
+cache = false
 
 [phases.build]
 cmds = ["npm run build"]
+cache = false
 
 [start]
 cmd = "npm run start:prod"
