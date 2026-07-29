@@ -21,6 +21,8 @@ import { ReservasModule } from './modules/reservas/reservas.module';
 import { ComunicadosModule } from './modules/comunicados/comunicados.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 
+import { AppController } from './app.controller';
+
 @Module({
   imports: [
     // Configuration
@@ -78,5 +80,6 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     ComunicadosModule,
     DashboardModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
