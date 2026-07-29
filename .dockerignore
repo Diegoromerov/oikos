@@ -1,0 +1,16 @@
+admin-panel/
+node_modules/
+dist/
+.next/
+*.log
+.env
+.env.local
+coverage/
+.nyc_output/
+.git/
+*.md
+Dockerfile
+docker-compose.yml
+*.sql
+migrations/
+!migrations/*.sql
